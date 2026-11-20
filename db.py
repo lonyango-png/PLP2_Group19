@@ -77,4 +77,17 @@ class PharmaDatabase:
                 INDEX idx_med_expiry (medicine_id, expiry_date)
             ) ENGINE=InnoDB
         """)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS sales (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NULL,
+                total_amount DECIMAL(12, 2) NOT NULL,
+                status ENUM('completed', 'voided') NOT NULL DEFAULT 'completed',
+                void_reason VARCHAR(255) NULL,
+                sold_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_sales_user FOREIGN KEY (user_id) REFERENCES users(id),
+                INDEX idx_sold_at (sold_at)
+            ) ENGINE=InnoDB
+        """)
     
