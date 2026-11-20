@@ -43,3 +43,28 @@ class AlertsAndReportsService:
         finally:
             cur.close()
             conn.close()
+    def get_expired_batches(self):
+        conn = self.db.connect()
+        cur = conn.cursor(dictionary=True)
+        try:
+            cur.execute(
+                """
+                SELECT
+                    b.batch_number,
+                    b.quantity,
+                    b.expiry_date,
+                    m.name AS medicine_name
+                FROM batches b
+                JOIN medicines m ON m.id = b.medicine_id
+                WHERE b.is_active = 1
+                  AND m.is_active = 1
+                  AND b.quantity > 0
+                  AND b.expiry_date < %s
+                ORDER BY b.expiry_date ASC
+                """,
+                (self.db.today_str(),),
+            )
+            return cur.fetchall()
+        finally:
+            cur.close()
+            conn.close()
