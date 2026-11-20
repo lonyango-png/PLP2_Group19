@@ -1,3 +1,4 @@
+from datetime import date
 import os
 import mysql.connector
 
@@ -9,3 +10,20 @@ class PharmaDatabase:
         self.database = database or os.getenv("PHARMA_DB_NAME", "pharma_db")
         self.port = int(port or os.getenv("PHARMA_DB_PORT", "3306))
         self.init_db()
+
+    def _server_connect(self):
+        return mysql.connector.connect(
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            port=self.port,
+        )
+
+    def connect(self):
+        return mysql.connector.connect(
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            database=self.database,
+            port=self.port,
+        )
