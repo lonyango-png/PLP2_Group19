@@ -1,2 +1,71 @@
+from datetime import date, datetime
 class InventoryService:
-    pass 
+#Handles medicines, batches, search, and computed stock status.
+
+    def _init_(self, db):
+        self.db = db
+
+    @staticmethod
+    def compute_status(sellable_qty: int, reorder_level: int) -> str:
+        if sellable_qty <= 0:
+            return "Out of Stock"
+        if sellable_qty <= reorder_level:
+            return "Low Stock"
+        return "OK"
+    
+    def add_medicine_and_batch(
+        self,
+        name: str,
+        batch_number: str,
+        quantity: int,
+        unit_price: float,
+        expiry_date_str: str,
+        reorder_level: int = 20,
+    ):
+        if quantity <= 0:
+            raise ValueError("Quantity must be at least 1.")
+        if unit_price <= 0:
+            raise ValueError("Unit price must be greater than 0.")
+        if reorder_level < 0:
+            raise ValueError("Reorder level cannot be negative.")
+
+        expiry_dt = datetime.strptime(expiry_date_str, "%Y-%m-%d").date()
+        if expiry_dt <= date.today():
+            raise ValueError("New batch expiry date must be in the future.")
+
+        conn = self.db.connect()
+        cur = conn.cursor()
+        try:
+            conn.start_transaction()
+            cur.execute(
+                """
+                INSERT INTO medicines (name, unit_price, reorder_level, is_active)
+                VALUES (%s, %s, %s, 1)
+                ON DUPLICATE KEY UPDATE
+                    unit_price = VALUES(unit_price),
+                    reorder_level = VALUES(reorder_level),
+                    is_active = 1
+                """,
+                (name, float(unit_price), int(reorder_level)),
+            )
+
+            cur.execute("SELECT id FROM medicines WHERE name = %s", (name,))
+            med_id = cur.fetchone()[0]
+
+            cur.execute(
+                """
+                INSERT INTO batches
+                    (medicine_id, batch_number, quantity, expiry_date, received_date, is_active)
+                VALUES (%s, %s, %s, %s, %s, 1)
+                """,
+                (med_id, batch_number, int(quantity), expiry_dt.isoformat(), self.db.today_str()),
+            )
+            batch_id = cur.lastrowid
+            conn.commit()
+            return med_id, batch_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cur.close()
+            conn.close()
