@@ -91,3 +91,59 @@ class SalesService:
         finally:
             cur.close()
             conn.close()
+
+    def void_sale(self, sale_id: int, reason: str):
+        if sale_id <= 0:
+            raise ValueError("Sale ID must be greater than 0.")
+
+        if not reason or not reason.strip():
+            raise ValueError("A reason is required to void a sale.")
+
+        conn = self.db.connect()
+        cur = conn.cursor()
+
+        try:
+            conn.start_transaction()
+
+            cur.execute(
+                "SELECT id, status FROM sales WHERE id = %s FOR UPDATE",
+                (sale_id,),
+            )
+            sale = cur.fetchone()
+
+            if sale is None:
+                raise ValueError("Sale not found.")
+
+            if sale[1] != "completed":
+                raise ValueError("Only completed sales can be voided.")
+
+            cur.execute(
+                "SELECT batch_id, quantity FROM sale_items WHERE sale_id = %s",
+                (sale_id,),
+            )
+            items = cur.fetchall()
+
+            for item in items:
+                cur.execute(
+                    "UPDATE batches SET quantity = quantity + %s WHERE id = %s",
+                    (item[1], item[0]),
+                )
+
+            cur.execute(
+                """
+                UPDATE sales
+                SET status = %s, void_reason = %s
+                WHERE id = %s
+                """,
+                ("voided", reason.strip(), sale_id),
+            )
+
+            conn.commit()
+            return {"sale_id": sale_id, "status": "voided"}
+
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cur.close()
+            conn.close()
