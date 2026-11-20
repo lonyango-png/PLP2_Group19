@@ -69,5 +69,22 @@ class AuthService:
             cur.close()
             conn.close()
 
-
+    def create_user(self, username: str, full_name: str, password: str, role: str = "attendant"):
+        if role not in ("pharmacist", "attendant"):
+            raise ValueError("Role must be 'pharmacist' or 'attendant'.")
+        conn = self.db.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO users (username, full_name, password_hash, role, is_active)
+                VALUES (%s, %s, %s, %s, 1)
+                """,
+                (username, full_name, self.hash_password(password), role),
+            )
+            conn.commit()
+            return cur.lastrowid
+        finally:
+            cur.close()
+            conn.close()
 
