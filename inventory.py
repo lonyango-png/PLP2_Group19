@@ -69,3 +69,44 @@ class InventoryService:
         finally:
             cur.close()
             conn.close()
+
+    def search_medicines(self, keyword: str = ""):
+        conn = self.db.connect()
+        cur = conn.cursor(dictionary=True)
+        try:
+            today = self.db.today_str()
+            cur.execute(
+                """
+                SELECT
+                    m.id,
+                    m.name,
+                    m.unit_price,
+                    m.reorder_level,
+                    COALESCE(SUM(
+                        CASE
+                            WHEN b.is_active = 1 AND b.expiry_date >= %s AND b.quantity > 0
+                            THEN b.quantity ELSE 0
+                        END
+                    ), 0) AS sellable_qty,
+                    MIN(
+                        CASE
+                            WHEN b.is_active = 1 AND b.expiry_date >= %s AND b.quantity > 0
+                            THEN b.expiry_date ELSE NULL
+                        END
+                    ) AS nearest_expiry
+                FROM medicines m
+                LEFT JOIN batches b ON b.medicine_id = m.id
+                WHERE m.is_active = 1
+                  AND m.name LIKE %s
+                GROUP BY m.id, m.name, m.unit_price, m.reorder_level
+                ORDER BY m.name ASC
+                """,
+                (today, today, f"%{keyword}%"),
+            )
+            rows = cur.fetchall()
+            for r in rows:
+                r["status"] = self.compute_status(r["sellable_qty"], r["reorder_level"])
+            return rows
+        finally:
+            cur.close()
+            conn.close()
