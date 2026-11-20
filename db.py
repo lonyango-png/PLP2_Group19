@@ -27,3 +27,29 @@ class PharmaDatabase:
             database=self.database,
             port=self.port,
         )
+
+    def init_db(self):
+        server_conn = self._server_connect()
+        cur = server_conn.cursor()
+        cur.execute(
+            f"CREATE DATABASE IF NOT EXISTS `{self.database}` "
+            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        )
+        server_conn.commit()
+        cur.close()
+        server_conn.close()
+
+        conn = self.connect()
+        cur = conn.cursor()
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(30) NOT NULL UNIQUE,
+                full_name VARCHAR(100) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                role ENUM('pharmacist', 'attendant') NOT NULL DEFAULT 'attendant',
+                is_active TINYINT(1) NOT NULL DEFAULT 1
+            ) ENGINE=InnoDB
+        """)
+    
