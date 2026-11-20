@@ -68,3 +68,21 @@ class AlertsAndReportsService:
         finally:
             cur.close()
             conn.close()
+    def today_sales_summary(self):
+        conn = self.db.connect()
+        cur = conn.cursor(dictionary=True)
+        try:
+            cur.execute(
+                """
+                SELECT
+                    COUNT(*) AS sales_count,
+                    COALESCE(SUM(total_amount), 0) AS revenue
+                FROM sales
+                WHERE DATE(sold_at) = CURDATE()
+                  AND status = 'completed'
+                """
+            )
+            return cur.fetchone()
+        finally:
+            cur.close()
+            conn.close()
