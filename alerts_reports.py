@@ -15,3 +15,31 @@ class AlertsAndReportsService:
         try:
             today = date.today()
             cutoff = today + timedelta(days=days_window)
+            cur.execute(
+                """
+                SELECT
+                    b.batch_number,
+                    b.quantity,
+                    b.expiry_date,
+                    m.name AS medicine_name
+                FROM batches b
+                JOIN medicines m ON m.id = b.medicine_id
+                WHERE b.is_active = 1
+                  AND m.is_active = 1
+                  AND b.quantity > 0
+                  AND b.expiry_date >= %s
+                  AND b.expiry_date <= %s
+                ORDER BY b.expiry_date ASC, b.id ASC
+                 """,
+                (today.isoformat(), cutoff.isoformat()),
+            )
+            rows = cur.fetchall()
+            for row in rows:
+                exp = row["expiry_date"]
+                if isinstance(exp, datetime):
+                    exp = exp.date()
+                row["days_left"] = (exp - today).days
+            return rows
+        finally:
+            cur.close()
+            conn.close()
