@@ -62,4 +62,19 @@ class PharmaDatabase:
                 is_active TINYINT(1) NOT NULL DEFAULT 1
             ) ENGINE=InnoDB
         """)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS batches (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                medicine_id INT NOT NULL,
+                batch_number VARCHAR(50) NOT NULL,
+                quantity INT NOT NULL,
+                expiry_date DATE NOT NULL,
+                received_date DATE NOT NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                CONSTRAINT fk_batches_med FOREIGN KEY (medicine_id) REFERENCES medicines(id),
+                UNIQUE KEY uq_med_batch (medicine_id, batch_number),
+                INDEX idx_med_expiry (medicine_id, expiry_date)
+            ) ENGINE=InnoDB
+        """)
     
