@@ -42,4 +42,32 @@ class AuthService:
             cur.close()
             conn.close()
 
+    def login(self, username: str, password: str):
+        conn = self.db.connect()
+        cur = conn.cursor(dictionary=True)
+        try:
+            cur.execute(
+                """
+                SELECT id, username, full_name, password_hash, role, is_active
+                FROM users
+                WHERE username = %s
+                """,
+                (username,),
+            )
+            user = cur.fetchone()
+            if not user or not user["is_active"]:
+                return None
+            if not self.verify_password(password, user["password_hash"]):
+                return None
+            return {
+                "id": user["id"],
+                "username": user["username"],
+                "full_name": user["full_name"],
+                "role": user["role"],
+            }
+        finally:
+            cur.close()
+            conn.close()
+
+
 
