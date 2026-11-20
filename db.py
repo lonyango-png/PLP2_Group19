@@ -52,4 +52,14 @@ class PharmaDatabase:
                 is_active TINYINT(1) NOT NULL DEFAULT 1
             ) ENGINE=InnoDB
         """)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS medicines (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                unit_price DECIMAL(10, 2) NOT NULL,
+                reorder_level INT NOT NULL DEFAULT 20,
+                is_active TINYINT(1) NOT NULL DEFAULT 1
+            ) ENGINE=InnoDB
+        """)
     
