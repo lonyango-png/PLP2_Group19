@@ -24,4 +24,22 @@ class AuthService:
         ).hex()
         return actual == expected
 
-    
+    def _ensure_default_admin(self):
+        conn = self.db.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id FROM users WHERE username = %s", ("admin",))
+            if not cur.fetchone():
+                cur.execute(
+                    """
+                    INSERT INTO users (username, full_name, password_hash, role, is_active)
+                    VALUES (%s, %s, %s, 'pharmacist', 1)
+                    """,
+                    ("admin", "Default Pharmacist", self.hash_password("admin123")),
+                )
+                conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+
