@@ -90,4 +90,27 @@ class PharmaDatabase:
                 INDEX idx_sold_at (sold_at)
             ) ENGINE=InnoDB
         """)
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS sale_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                sale_id INT NOT NULL,
+                batch_id INT NOT NULL,
+                medicine_id INT NOT NULL,
+                quantity INT NOT NULL,
+                unit_price DECIMAL(10, 2) NOT NULL,
+                CONSTRAINT fk_items_sale FOREIGN KEY (sale_id) REFERENCES sales(id),
+                CONSTRAINT fk_items_batch FOREIGN KEY (batch_id) REFERENCES batches(id),
+                CONSTRAINT fk_items_med FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+            ) ENGINE=InnoDB
+        """)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+           
+    @staticmethod
+    def today_str():
+        return date.today().isoformat()
+    
     
