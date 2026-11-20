@@ -32,3 +32,40 @@ class InventoryService:
         expiry_dt = datetime.strptime(expiry_date_str, "%Y-%m-%d").date()
         if expiry_dt <= date.today():
             raise ValueError("New batch expiry date must be in the future.")
+
+        conn = self.db.connect()
+        cur = conn.cursor()
+        try:
+            conn.start_transaction()
+            cur.execute(
+                """
+                INSERT INTO medicines (name, unit_price, reorder_level, is_active)
+                VALUES (%s, %s, %s, 1)
+                ON DUPLICATE KEY UPDATE
+                    unit_price = VALUES(unit_price),
+                    reorder_level = VALUES(reorder_level),
+                    is_active = 1
+                """,
+                (name, float(unit_price), int(reorder_level)),
+            )
+
+            cur.execute("SELECT id FROM medicines WHERE name = %s", (name,))
+            med_id = cur.fetchone()[0]
+
+            cur.execute(
+                """
+                INSERT INTO batches
+                    (medicine_id, batch_number, quantity, expiry_date, received_date, is_active)
+                VALUES (%s, %s, %s, %s, %s, 1)
+                """,
+                (med_id, batch_number, int(quantity), expiry_dt.isoformat(), self.db.today_str()),
+            )
+            batch_id = cur.lastrowid
+            conn.commit()
+            return med_id, batch_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cur.close()
+            conn.close()
