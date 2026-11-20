@@ -66,13 +66,13 @@ class SalesService:
                     (quantity_to_sell, batch_id),
                 )
                 cur.execute(
-                      """
-                      INSERT INTO sale_items
-                      (sale_id, batch_id, medicine_id, quantity, unit_price)
-                      VALUES (%s, %s, %s, %s, %s)
-                      """,
-                      (sale_id, batch_id, medicine_id, quantity_to_sell, unit_price),
-                  )
+                    """
+                    INSERT INTO sale_items
+                    (sale_id, batch_id, medicine_id, quantity, unit_price)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (sale_id, batch_id, medicine_id, quantity_to_sell, unit_price),
+                )
 
 
                 remaining -= quantity_to_sell
