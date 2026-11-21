@@ -15,4 +15,15 @@ class PharmaCLI:
         self.current_user = None
 
     def login_loop(self):
-        pass
+        for _ in range(3):
+            print("\n=== PHARMA LOGIN ===")
+            username = input("Username: ").strip()
+            password = input("Password: ").strip()
+            user = self.auth.login(username, password)
+            if user:
+                self.current_user = user
+                print(f"\nWelcome, {user['full_name']} ({user['role']})!")
+                return True
+            print("Invalid credentials or inactive account.")
+        print("Too many failed login attempts.")
+        return False
