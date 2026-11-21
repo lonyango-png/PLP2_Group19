@@ -27,3 +27,17 @@ class PharmaCLI:
             print("Invalid credentials or inactive account.")
         print("Too many failed login attempts.")
         return False
+
+    def menu_loop(self):
+        while self.current_user:
+            role = self.current_user["role"]
+            print("\n=== PHARMA MENU ===")
+            print("1. Search medicines")
+            print("2. Record FEFO sale")
+            print("3. View expiry & low-stock alerts")
+            if role == "pharmacist":
+                print("4. Add medicine / batch")
+                print("5. Today's sales summary")
+                print("6. Void a sale")
+                print("7. Create user")
+            print("0. Logout / Exit")
