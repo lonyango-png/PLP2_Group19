@@ -69,6 +69,31 @@ class AuthService:
             cur.close()
             conn.close()
 
+    def list_users(self):
+        conn = self.db.connect()
+        cur = conn.cursor(dictionary=True)
+        try:
+            cur.execute("SELECT id, username, full_name, role, is_active FROM users")
+            return cur.fetchall()
+        finally:
+            cur.close()
+            conn.close()
+
+    def delete_user(self, username: str):
+        conn = self.db.connect()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+            if not cur.fetchone():
+                raise ValueError(f"User '{username}' not found.")
+            if username == "admin":
+                raise ValueError("Cannot delete the default admin user.")
+            cur.execute("DELETE FROM users WHERE username = %s", (username,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
     def create_user(self, username: str, full_name: str, password: str, role: str = "attendant"):
         if role not in ("pharmacist", "attendant"):
             raise ValueError("Role must be 'pharmacist' or 'attendant'.")

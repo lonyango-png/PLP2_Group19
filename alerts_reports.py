@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 
 class AlertsAndReportsService:
     """Handles expiry alerts, low-stock alerts, and sales totals."""
-    def _init_(self, db):
+    def __init__(self, db):
         self.db = db
 
     def get_expiring_soon(self, days_window: int = 90):

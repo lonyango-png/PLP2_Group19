@@ -1,8 +1,8 @@
 from datetime import date, datetime
 class InventoryService:
-#Handles medicines, batches, search, and computed stock status.
+    # Handles medicines, batches, search, and computed stock status.
 
-    def _init_(self, db):
+    def __init__(self, db):
         self.db = db
 
     @staticmethod

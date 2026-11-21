@@ -26,7 +26,7 @@ class SalesService:
 
             cur.execute(
                 """
-                SELECT id, quantity, expiry_date
+                SELECT id, batch_number, quantity, expiry_date
                 FROM batches
                 WHERE medicine_id = %s
                   AND quantity > 0
@@ -38,7 +38,7 @@ class SalesService:
                 (medicine_id, self.db.today_str()),
             )
             batches = cur.fetchall()
-            total_available = sum(batch[1] for batch in batches)
+            total_available = sum(batch[2] for batch in batches)
             if total_available < quantity_needed:
                 raise ValueError(
                     f"Not enough stock. Available: {total_available}"
@@ -46,6 +46,7 @@ class SalesService:
 
             remaining = quantity_needed
             total_amount = unit_price * quantity_needed
+            allocations = []
 
             cur.execute(
                 "INSERT INTO sales (user_id, total_amount, status) VALUES (%s, %s, %s)",
@@ -58,7 +59,7 @@ class SalesService:
                     break
 
                 batch_id = batch[0]
-                batch_quantity = batch[1]
+                batch_quantity = batch[2]
                 quantity_to_sell = min(remaining, batch_quantity)
 
                 cur.execute(
@@ -73,7 +74,12 @@ class SalesService:
                     """,
                     (sale_id, batch_id, medicine_id, quantity_to_sell, unit_price),
                 )
-
+                allocations.append({
+                    "batch_number": batch[1],
+                    "expiry_date": batch[3],
+                    "qty_taken": quantity_to_sell,
+                    "remaining_in_batch": batch_quantity - quantity_to_sell,
+                })
 
                 remaining -= quantity_to_sell
 
@@ -83,6 +89,7 @@ class SalesService:
                 "medicine": medicine_name,
                 "quantity": quantity_needed,
                 "total_amount": total_amount,
+                "allocations": allocations,
             }
 
         except Exception:

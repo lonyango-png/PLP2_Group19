@@ -1,3 +1,5 @@
+from pathlib import Path 
+import os
 from mysql.connector import Error 
 from alerts_reports import AlertsAndReportsService
 from auth import AuthService
@@ -5,6 +7,22 @@ from db import PharmaDatabase
 from inventory import InventoryService
 from sales import SalesService
 
+
+def load_env_file(env_path=".env"):
+    """Load simple KEY=VALUE pairs from a .env file into os.environ."""
+    path = Path(env_path)
+    if not path.is_file():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 class PharmaCLI:
     def __init__(self):
         self.db = PharmaDatabase()
@@ -40,6 +58,7 @@ class PharmaCLI:
                 print("5. Today's sales summary")
                 print("6. Void a sale")
                 print("7. Create user")
+                print("8. Delete user")
             print("0. Logout / Exit")
 
             choice = input("\nChoose option: ").strip()
@@ -110,9 +129,16 @@ class PharmaCLI:
                     uname = input("New username: ").strip()
                     fname = input("Full name: ").strip()
                     pwd = input("Password: ").strip()
-                    urole = input("Role (pharmacist/attendant) [attendant]: ").strip() or "attendant"
+                    urole = input("Role (pharmacist/attendant) [Default: attendant]: ").strip() or "attendant"
                     uid = self.auth.create_user(uname, fname, pwd, urole)
                     print(f"Created user #{uid} ({uname}).")
+                elif choice == "8" and role == "pharmacist":
+                    for u in self.auth.list_users():
+                        status = "active" if u["is_active"] else "inactive"
+                        print(f"  {u['id']}. {u['username']} | {u['full_name']} | {u['role']} | {status}")
+                    uname = input("Username to delete: ").strip()
+                    self.auth.delete_user(uname)
+                    print(f"User '{uname}' deleted.")
                 elif choice == "0":
                     print("Goodbye!")
                     self.current_user = None
@@ -124,6 +150,7 @@ class PharmaCLI:
                 print(f"Database error: {db_err}")
 
 def main():
+    load_env_file()
     try:
         cli = PharmaCLI()
         if cli.login_loop():
