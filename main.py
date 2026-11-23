@@ -32,6 +32,38 @@ class PharmaCLI:
         self.reports = AlertsAndReportsService(self.db)
         self.current_user = None
 
+    @staticmethod
+    def _input_int(prompt):
+        val = input(prompt).strip()
+        if not val.lstrip('-').isdigit():
+            raise ValueError(f"Expected a whole number, got '{val}'.")
+        return int(val)
+
+    @staticmethod
+    def _input_float(prompt):
+        val = input(prompt).strip()
+        try:
+            return float(val)
+        except ValueError:
+            raise ValueError(f"Expected a number, got '{val}'.")
+
+    @staticmethod
+    def _input_str(prompt):
+        val = input(prompt).strip()
+        if not val:
+            raise ValueError(f"'{prompt.strip()}' cannot be empty.")
+        return val
+
+    @staticmethod
+    def _input_date(prompt):
+        val = input(prompt).strip()
+        from datetime import datetime
+        try:
+            datetime.strptime(val, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"Invalid date '{val}'. Use YYYY-MM-DD format.")
+        return val
+
     def login_loop(self):
         for _ in range(3):
             print("\n=== PHARMA LOGIN ===")
@@ -72,8 +104,8 @@ class PharmaCLI:
                             f"Nearest Exp: {m['nearest_expiry'] or 'N/A'}"
                         )
                 elif choice == "2":
-                    med_id = int(input("Medicine ID: ").strip())
-                    qty = int(input("Quantity to sell: ").strip())
+                    med_id = self._input_int("Medicine ID: ")
+                    qty = self._input_int("Quantity to sell: ")
                     receipt = self.sales.record_fefo_sale(med_id, qty, self.current_user["id"])
                     print(
                         f"Sale #{receipt['sale_id']} recorded! Total: {receipt['total_amount']:.2f}"
@@ -104,11 +136,11 @@ class PharmaCLI:
                                 f"(Reorder: {m['reorder_level']})"
                             )
                 elif choice == "4" and role == "pharmacist":
-                    name = input("Medicine name: ").strip()
-                    batch_no = input("Batch number: ").strip()
-                    qty = int(input("Quantity: ").strip())
-                    price = float(input("Unit price: ").strip())
-                    exp = input("Expiry date (YYYY-MM-DD): ").strip()
+                    name = self._input_str("Medicine name: ")
+                    batch_no = self._input_str("Batch number: ")
+                    qty = self._input_int("Quantity: ")
+                    price = self._input_float("Unit price: ")
+                    exp = self._input_date("Expiry date (YYYY-MM-DD): ")
                     reorder = int(input("Reorder level [20]: ").strip() or "20")
                     _, batch_id = self.inventory.add_medicine_and_batch(
                         name, batch_no, qty, price, exp, reorder
@@ -121,14 +153,14 @@ class PharmaCLI:
                         f"Revenue: {float(summary['revenue']):.2f}"
                     )
                 elif choice == "6" and role == "pharmacist":
-                    sale_id = int(input("Sale ID to void: ").strip())
-                    reason = input("Reason: ").strip()
+                    sale_id = self._input_int("Sale ID to void: ")
+                    reason = self._input_str("Reason: ")
                     self.sales.void_sale(sale_id, reason)
                     print(f"Sale #{sale_id} voided and batch quantities restored.")
                 elif choice == "7" and role == "pharmacist":
-                    uname = input("New username: ").strip()
-                    fname = input("Full name: ").strip()
-                    pwd = input("Password: ").strip()
+                    uname = self._input_str("New username: ")
+                    fname = self._input_str("Full name: ")
+                    pwd = self._input_str("Password: ")
                     urole = input("Role (pharmacist/attendant) [Default: attendant]: ").strip() or "attendant"
                     uid = self.auth.create_user(uname, fname, pwd, urole)
                     print(f"Created user #{uid} ({uname}).")
@@ -136,7 +168,7 @@ class PharmaCLI:
                     for u in self.auth.list_users():
                         status = "active" if u["is_active"] else "inactive"
                         print(f"  {u['id']}. {u['username']} | {u['full_name']} | {u['role']} | {status}")
-                    uname = input("Username to delete: ").strip()
+                    uname = self._input_str("Username to delete: ")
                     self.auth.delete_user(uname)
                     print(f"User '{uname}' deleted.")
                 elif choice == "0":
